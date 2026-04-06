@@ -80,7 +80,6 @@
         .search-bar { position: relative; display: flex; align-items: center; width: 100%; }
         .search-bar i { position: absolute; left: 18px; color: var(--text-sec); font-size: 16px;}
         
-        /* FIX: font-size 16px avoids iOS zoom issue */
         .search-bar input {
             width: 100%; padding: 12px 16px 12px 50px;
             background: rgba(255,255,255,0.05); border: 1px solid var(--border);
@@ -90,14 +89,14 @@
         .search-bar input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); box-shadow: 0 0 15px var(--accent-glow); }
         
         .suggestions {
-            position: absolute; top: 110%; left: 0; width: 100%; background: #121215;
+            position: absolute; top: calc(100% + 10px); left: 0; width: 100%; background: #121215;
             border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-            display: none; flex-direction: column; z-index: 60; box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            display: none; flex-direction: column; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
         }
         .suggestions.active { display: flex; animation: fadeIn 0.2s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .suggestion-item { padding: 12px 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px;}
+        .suggestion-item { padding: 12px 16px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
         .suggestion-item:hover { background: rgba(255,255,255,0.08); }
 
         .nav-links { display: flex; gap: 10px; }
@@ -297,11 +296,24 @@
         .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* === MOBILE RESPONSIVE TWEAKS === */
+        /* === MOBILE RESPONSIVE FIXES (THE MAGIC HAPPENS HERE) === */
         @media (max-width: 768px) {
-            /* Strict box sizing ensures no overflow */
-            header { flex-wrap: wrap; padding: max(12px, env(safe-area-inset-top)) 5% 12px; width: 100vw; box-sizing: border-box; }
-            .search-container { order: 3; max-width: 100%; width: 100%; margin-top: 12px; }
+            /* Mobile Header uses Grid to separate Search into a new row */
+            header { 
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 15px 10px;
+                padding: max(12px, env(safe-area-inset-top)) 5% 15px; 
+                width: 100vw; box-sizing: border-box; 
+            }
+            .brand { grid-column: 1; }
+            .nav-links { grid-column: 2; margin-left: auto; }
+            .search-container { 
+                grid-column: 1 / -1; /* Spans full width below logo */
+                width: 100%; 
+                max-width: 100%; 
+                margin-top: 0; 
+            }
             .nav-btn span { display: none; }
             
             .hero { height: 220px; margin: 15px 5%; border-radius: 20px;}
@@ -343,17 +355,17 @@
     <header>
         <a href="#" class="brand" onclick="app.loadHome()"><i class="fa-solid fa-compact-disc fa-spin-pulse"></i> Dhwani</a>
         
+        <div class="nav-links">
+            <button class="nav-btn" onclick="app.loadPlaylists()"><i class="fa-solid fa-list-music"></i> <span>Playlists</span></button>
+            <button class="nav-btn" onclick="app.loadFavorites()"><i class="fa-solid fa-heart"></i> <span>Liked</span></button>
+        </div>
+
         <div class="search-container">
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="searchInput" placeholder="Search Movies (e.g. Karan Arjun) or Artists">
             </div>
             <div class="suggestions" id="searchSuggestions"></div>
-        </div>
-
-        <div class="nav-links">
-            <button class="nav-btn" onclick="app.loadPlaylists()"><i class="fa-solid fa-list-music"></i> <span>Playlists</span></button>
-            <button class="nav-btn" onclick="app.loadFavorites()"><i class="fa-solid fa-heart"></i> <span>Liked</span></button>
         </div>
     </header>
 
@@ -465,9 +477,9 @@
     <script>
         const app = {
             state: {
-                tracks: [],        // Used for the Main Grid
-                heroTracks: [],    // FIX: Separated array for Hero Slider
-                recTracks: [],     // Used for Recommended Grid
+                tracks: [], 
+                heroTracks: [], 
+                recTracks: [], 
                 allContextTracks: [], 
                 currentIndex: -1,
                 isPlaying: false,
@@ -544,7 +556,7 @@
                 
                 this.dom.searchInput.addEventListener('keypress', (e) => {
                     if(e.key === 'Enter') {
-                        this.dom.searchInput.blur(); // Hides mobile keyboard on enter
+                        this.dom.searchInput.blur(); 
                         this.dom.suggestions.classList.remove('active');
                         this.loadCategory(this.dom.searchInput.value);
                     }
@@ -594,12 +606,13 @@
                         app.dom.suggestions.classList.remove('active');
                         return;
                     }
+                    /* FIX: Flex-shrink on image and proper overflow hidden on text wrapping block to prevent squishing */
                     app.dom.suggestions.innerHTML = tracks.map(t => `
                         <div class="suggestion-item" onclick="app.api.playFromSearch('${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">
-                            <img src="${t.cover}" style="width:35px; height:35px; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                            <div style="flex:1; overflow:hidden;">
-                                <div style="font-size:14px; font-weight:700; white-space:nowrap; text-overflow:ellipsis; color:#fff;">${t.title}</div>
-                                <div style="font-size:12px; color:var(--text-sec);">${t.artist}</div>
+                            <img src="${t.cover}" style="width:40px; height:40px; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); flex-shrink: 0;">
+                            <div style="flex:1; overflow:hidden; min-width: 0;">
+                                <div style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff;">${t.title}</div>
+                                <div style="font-size:12px; color:var(--text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.artist}</div>
                             </div>
                         </div>
                     `).join('');
@@ -753,7 +766,6 @@
                             const idx = parseInt(match[1]);
                             const ctx = match[2];
                             
-                            // FIX: Map correctly to separated arrays
                             let list = ctx === 'main' ? app.state.tracks : (ctx === 'hero' ? app.state.heroTracks : app.state.recTracks);
                             
                             if(list[idx]?.id === activeTrackId) {
@@ -822,7 +834,6 @@
             player: {
                 playTrack(index, contextStr) {
                     let sourceList = [];
-                    // FIX: Map accurately to separated context arrays
                     if(contextStr === 'main') sourceList = app.state.tracks;
                     else if(contextStr === 'rec') sourceList = app.state.recTracks;
                     else if(contextStr === 'hero') sourceList = app.state.heroTracks;
@@ -925,7 +936,6 @@
                     this.api.fetchTracks("arijit singh romantic")
                 ]);
                 
-                // FIX: Separate hero tracks from grid tracks cleanly
                 this.state.heroTracks = main.slice(0, 5);
                 this.state.tracks = main.slice(5); 
                 this.state.recTracks = rec;

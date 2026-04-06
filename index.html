@@ -88,17 +88,6 @@
         }
         .search-bar input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); box-shadow: 0 0 15px var(--accent-glow); }
         
-        .suggestions {
-            position: absolute; top: calc(100% + 10px); left: 0; width: 100%; background: #121215;
-            border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-            display: none; flex-direction: column; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-        }
-        .suggestions.active { display: flex; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .suggestion-item { padding: 12px 16px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
-        .suggestion-item:hover { background: rgba(255,255,255,0.08); }
-
         .nav-links { display: flex; gap: 10px; }
         .nav-btn {
             background: var(--surface); border: 1px solid var(--border); color: #fff;
@@ -215,9 +204,9 @@
 
         .p-center { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 500px; }
         .p-controls { display: flex; align-items: center; gap: 20px; }
-        .p-btn { background: none; border: none; color: var(--text-sec); font-size: 16px; cursor: pointer; transition: all 0.2s; }
+        .p-btn { background: none; border: none; color: var(--text-sec); font-size: 16px; cursor: pointer; transition: all 0.2s; position: relative;}
         .p-btn:hover { color: #fff; transform: scale(1.1); }
-        .p-btn.active-state { color: var(--accent); position: relative; }
+        .p-btn.active-state { color: var(--accent); }
         .p-btn.active-state::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 5px var(--accent);}
         
         .play-pause-btn {
@@ -260,9 +249,22 @@
         .fs-player.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
         .fs-bg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(60px) brightness(0.3); z-index: -1; transform: scale(1.2);}
         
-        .fs-header { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; margin-bottom: auto; letter-spacing: 1px;}
+        .fs-header { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; margin-bottom: auto; letter-spacing: 1px; position: relative;}
         .fs-close { cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 50%; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.1);}
         .fs-close:hover { background: rgba(255,255,255,0.15); transform: translateY(-3px); }
+
+        /* 3 DOTS OPTIONS MENU */
+        .fs-menu {
+            position: absolute; top: 60px; right: 0; background: rgba(15,15,18,0.95);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+            padding: 8px 0; display: none; flex-direction: column; z-index: 250;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6); width: 190px;
+        }
+        .fs-menu.active { display: flex; animation: fadeIn 0.2s; }
+        .fs-menu-item { padding: 14px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: 0.2s; color: #fff;}
+        .fs-menu-item i { color: var(--text-sec); font-size: 16px; width: 18px; text-align: center;}
+        .fs-menu-item:hover { background: rgba(255,255,255,0.08); }
+        .fs-menu-item:hover i { color: var(--accent); }
 
         .fs-cover-container { width: 100%; max-width: 320px; aspect-ratio: 1; margin: 0 auto 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden; position: relative;}
         .fs-cover { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
@@ -279,7 +281,7 @@
         .fs-time { display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 10px; font-weight: 600;}
 
         .fs-main-controls { display: flex; justify-content: space-between; align-items: center; padding: 0 10px;}
-        .fs-btn { font-size: 22px; color: #fff; background: none; border: none; cursor: pointer; transition: all 0.2s; }
+        .fs-btn { font-size: 22px; color: #fff; background: none; border: none; cursor: pointer; transition: all 0.2s; position: relative; }
         .fs-btn:hover { transform: scale(1.1); }
         .fs-btn.sec { font-size: 20px; color: rgba(255,255,255,0.6); }
         .fs-btn.sec.active-state { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow);}
@@ -296,9 +298,8 @@
         .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* === MOBILE RESPONSIVE FIXES (THE MAGIC HAPPENS HERE) === */
+        /* === MOBILE RESPONSIVE FIXES === */
         @media (max-width: 768px) {
-            /* Mobile Header uses Grid to separate Search into a new row */
             header { 
                 display: grid;
                 grid-template-columns: 1fr auto;
@@ -309,7 +310,7 @@
             .brand { grid-column: 1; }
             .nav-links { grid-column: 2; margin-left: auto; }
             .search-container { 
-                grid-column: 1 / -1; /* Spans full width below logo */
+                grid-column: 1 / -1; 
                 width: 100%; 
                 max-width: 100%; 
                 margin-top: 0; 
@@ -356,7 +357,7 @@
         <a href="#" class="brand" onclick="app.loadHome()"><i class="fa-solid fa-compact-disc fa-spin-pulse"></i> Dhwani</a>
         
         <div class="nav-links">
-            <button class="nav-btn" onclick="app.loadPlaylists()"><i class="fa-solid fa-list-music"></i> <span>Playlists</span></button>
+            <button class="nav-btn" onclick="app.loadPlaylists()"><i class="fa-solid fa-music"></i> <span>Playlists</span></button>
             <button class="nav-btn" onclick="app.loadFavorites()"><i class="fa-solid fa-heart"></i> <span>Liked</span></button>
         </div>
 
@@ -365,8 +366,7 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="searchInput" placeholder="Search Movies (e.g. Karan Arjun) or Artists">
             </div>
-            <div class="suggestions" id="searchSuggestions"></div>
-        </div>
+            </div>
     </header>
 
     <main id="mainContent">
@@ -436,7 +436,15 @@
         <div class="fs-header">
             <i class="fa-solid fa-chevron-down fs-close" onclick="app.toggleFullScreen()"></i>
             <span>Now Playing</span>
-            <i class="fa-solid fa-ellipsis fs-close"></i>
+            <div style="position: relative;">
+                <i class="fa-solid fa-ellipsis fs-close" id="btnFsMenu" onclick="app.toggleFsMenu()"></i>
+                <div class="fs-menu" id="fsMenu">
+                    <div class="fs-menu-item" onclick="app.utils.downloadCurrent()"><i class="fa-solid fa-download"></i> Download Song</div>
+                    <div class="fs-menu-item" onclick="app.utils.addCurrentToPlaylist()"><i class="fa-solid fa-plus"></i> Add to Playlist</div>
+                    <div class="fs-menu-item" onclick="app.toggleFavoriteCurrent()"><i class="fa-solid fa-heart"></i> Add to Liked</div>
+                    <div class="fs-menu-item" onclick="app.utils.shareCurrent()"><i class="fa-solid fa-share-nodes"></i> Share Link</div>
+                </div>
+            </div>
         </div>
 
         <div class="fs-cover-container">
@@ -491,8 +499,6 @@
                 categories: ["Trending", "Arijit Singh Special", "90s Bollywood", "Neha Kakkar", "Atif Aslam", "Love", "Sad", "Party Hindi", "LoFi Hindi", "Remix", "DJ", "Dialogues", "Instrumental", "Sufi", "Punjabi"],
                 activeCategory: "Trending",
                 view: 'home', 
-                carouselInterval: null,
-                searchDebounce: null
             },
 
             dom: {
@@ -503,9 +509,9 @@
                 heroSection: document.getElementById('heroSection'),
                 chipsContainer: document.getElementById('chipsContainer'),
                 searchInput: document.getElementById('searchInput'),
-                suggestions: document.getElementById('searchSuggestions'),
                 toast: document.getElementById('toast'),
                 ambientBg: document.getElementById('ambientBg'),
+                
                 miniPlayer: document.getElementById('miniPlayer'),
                 pCover: document.getElementById('pCover'),
                 pTitle: document.getElementById('pTitle'),
@@ -518,6 +524,7 @@
                 timeTotal: document.getElementById('timeTotal'),
                 pWaveform: document.getElementById('pWaveform'),
                 volSlider: document.getElementById('volSlider'),
+                
                 fsPlayer: document.getElementById('fsPlayer'),
                 fsBg: document.getElementById('fsBg'),
                 fsCover: document.getElementById('fsCover'),
@@ -529,7 +536,8 @@
                 btnFsLoop: document.getElementById('btnFsLoop'),
                 fsProgress: document.getElementById('fsProgress'),
                 fsTimeCurrent: document.getElementById('fsTimeCurrent'),
-                fsTimeTotal: document.getElementById('fsTimeTotal')
+                fsTimeTotal: document.getElementById('fsTimeTotal'),
+                fsMenu: document.getElementById('fsMenu')
             },
 
             init() {
@@ -544,21 +552,14 @@
             },
 
             bindEvents() {
-                this.dom.searchInput.addEventListener('input', (e) => {
-                    clearTimeout(this.state.searchDebounce);
-                    const q = e.target.value.trim();
-                    if(q.length < 2) { this.dom.suggestions.classList.remove('active'); return; }
-                    
-                    this.state.searchDebounce = setTimeout(() => {
-                        this.api.fetchSearchSuggestions(q);
-                    }, 400);
-                });
-                
+                // FIXED: Direct search on Enter. No dropdown list anymore.
                 this.dom.searchInput.addEventListener('keypress', (e) => {
                     if(e.key === 'Enter') {
-                        this.dom.searchInput.blur(); 
-                        this.dom.suggestions.classList.remove('active');
-                        this.loadCategory(this.dom.searchInput.value);
+                        const q = this.dom.searchInput.value.trim();
+                        this.dom.searchInput.blur(); // Hides keyboard on mobile
+                        if(q) {
+                            this.loadCategory(q);
+                        }
                     }
                 });
 
@@ -575,9 +576,17 @@
                     this.ui.updateProgressGradients();
                 });
 
+                // Global ripple and menu close listener
                 document.addEventListener('click', (e) => {
                     const btn = e.target.closest('button, .card, .chip');
                     if (btn) this.utils.createRipple(e, btn);
+                    
+                    // Close 3-dot menu if clicked outside
+                    if(!e.target.closest('#fsMenu') && !e.target.closest('#btnFsMenu')) {
+                        if(this.dom.fsMenu.classList.contains('active')) {
+                            this.dom.fsMenu.classList.remove('active');
+                        }
+                    }
                 });
             },
 
@@ -599,36 +608,6 @@
                         app.utils.showToast("Network error. Please try again.");
                         return [];
                     }
-                },
-                async fetchSearchSuggestions(q) {
-                    const tracks = await this.fetchTracks(q, 5);
-                    if(tracks.length === 0) {
-                        app.dom.suggestions.classList.remove('active');
-                        return;
-                    }
-                    /* FIX: Flex-shrink on image and proper overflow hidden on text wrapping block to prevent squishing */
-                    app.dom.suggestions.innerHTML = tracks.map(t => `
-                        <div class="suggestion-item" onclick="app.api.playFromSearch('${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">
-                            <img src="${t.cover}" style="width:40px; height:40px; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); flex-shrink: 0;">
-                            <div style="flex:1; overflow:hidden; min-width: 0;">
-                                <div style="font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff;">${t.title}</div>
-                                <div style="font-size:12px; color:var(--text-sec); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.artist}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                    app.dom.suggestions.classList.add('active');
-                },
-                playFromSearch(id, trackStr) {
-                    app.dom.suggestions.classList.remove('active');
-                    app.dom.searchInput.value = '';
-                    app.dom.searchInput.blur();
-                    const track = JSON.parse(decodeURIComponent(trackStr));
-                    
-                    if(!app.state.tracks.find(t => t.id === id)) {
-                        app.state.tracks.unshift(track);
-                        app.ui.renderGrid();
-                    }
-                    app.player.playTrack(app.state.tracks.findIndex(t => t.id === id), 'main');
                 }
             },
 
@@ -651,14 +630,8 @@
                         startX = e.pageX - slider.offsetLeft;
                         scrollLeft = slider.scrollLeft;
                     });
-                    slider.addEventListener('mouseleave', () => {
-                        isDown = false;
-                        slider.style.cursor = 'grab';
-                    });
-                    slider.addEventListener('mouseup', () => {
-                        isDown = false;
-                        slider.style.cursor = 'grab';
-                    });
+                    slider.addEventListener('mouseleave', () => { isDown = false; slider.style.cursor = 'grab'; });
+                    slider.addEventListener('mouseup', () => { isDown = false; slider.style.cursor = 'grab'; });
                     slider.addEventListener('mousemove', (e) => {
                         if (!isDown) return;
                         e.preventDefault();
@@ -680,7 +653,7 @@
                 },
                 renderGrid(list = app.state.tracks, container = app.dom.grid, context = 'main') {
                     if(list.length === 0) {
-                        container.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align:center; color: var(--text-sec); font-size:16px;">No tracks found for this search. Try something else!</div>`;
+                        container.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align:center; color: var(--text-sec); font-size:16px;">No tracks found. Try a different search!</div>`;
                         return;
                     }
                     container.innerHTML = list.map((track, i) => {
@@ -909,12 +882,14 @@
                     const isActive = app.state.loop > 0;
                     const isOne = app.state.loop === 2;
                     
-                    const updateBtn = (btn) => {
-                        btn.classList.toggle('active-state', isActive);
-                        btn.innerHTML = `<i class="fa-solid fa-repeat${isOne ? '1' : ''}"></i>`;
-                    };
-                    updateBtn(app.dom.btnMiniLoop);
-                    updateBtn(app.dom.btnFsLoop);
+                    // FIXED: Added a small indicator '1' when loop is single so it doesn't disappear
+                    const loopHtml = `<i class="fa-solid fa-repeat"></i>${isOne ? '<span style="font-size:10px; position:absolute; right:-6px; top:-4px; font-weight:800; color:var(--accent);">1</span>' : ''}`;
+                    
+                    app.dom.btnMiniLoop.classList.toggle('active-state', isActive);
+                    app.dom.btnMiniLoop.innerHTML = loopHtml;
+                    
+                    app.dom.btnFsLoop.classList.toggle('active-state', isActive);
+                    app.dom.btnFsLoop.innerHTML = loopHtml;
                     
                     app.utils.showToast(app.state.loop === 0 ? "Loop Off" : (app.state.loop===1 ? "Loop All" : "Loop One"));
                 }
@@ -991,10 +966,11 @@
                     return;
                 }
 
+                // FIXED: Replaced fa-list-music with standard icons (fa-compact-disc) to ensure rendering on free versions
                 this.dom.grid.innerHTML = plNames.map(name => `
                     <div class="card" style="cursor:pointer;" onclick="app.viewPlaylist('${name}')">
                         <div class="card-img-wrapper" style="background:linear-gradient(135deg, var(--accent), var(--accent-dark)); display:flex; align-items:center; justify-content:center; font-size:24px; color:#fff; box-shadow:0 4px 15px var(--accent-glow);">
-                            <i class="fa-solid fa-list-music"></i>
+                            <i class="fa-solid fa-compact-disc"></i>
                         </div>
                         <div class="card-info">
                             <div class="card-title">${name}</div>
@@ -1013,6 +989,10 @@
 
             toggleFullScreen() {
                 this.dom.fsPlayer.classList.toggle('active');
+            },
+            
+            toggleFsMenu() {
+                this.dom.fsMenu.classList.toggle('active');
             },
 
             toggleFavorite(e, id, trackStr) {
@@ -1038,6 +1018,7 @@
             },
 
             toggleFavoriteCurrent() {
+                this.dom.fsMenu.classList.remove('active');
                 const track = this.state.allContextTracks[this.state.currentIndex];
                 if(!track) return;
                 const idx = this.state.favorites.findIndex(t => t.id === track.id);
@@ -1069,18 +1050,37 @@
                 }
             },
 
+            // FIXED: Smart Add To Playlist Logic (No useless prompts if you have 0 or 1 playlist)
             addToPlaylistPrompt(e, trackStr) {
-                e.stopPropagation();
+                if(e) e.stopPropagation();
                 const track = JSON.parse(decodeURIComponent(trackStr));
                 const plNames = Object.keys(this.state.playlists);
+                
+                // Case 1: No playlist exists -> Create default and add
                 if(plNames.length === 0) {
-                    this.utils.showToast("Create a playlist first!");
+                    this.state.playlists["My Playlist"] = [track];
+                    localStorage.setItem('dhwani_playlists', JSON.stringify(this.state.playlists));
+                    this.utils.showToast("Added to My Playlist");
                     return;
                 }
                 
-                const msg = "Enter playlist number to add to:\n" + plNames.map((n, i) => `${i+1}. ${n}`).join('\n');
+                // Case 2: Only 1 playlist exists -> Add directly to it
+                if(plNames.length === 1) {
+                    const pName = plNames[0];
+                    if(!this.state.playlists[pName].find(t => t.id === track.id)) {
+                        this.state.playlists[pName].push(track);
+                        localStorage.setItem('dhwani_playlists', JSON.stringify(this.state.playlists));
+                        this.utils.showToast(`Added to ${pName}`);
+                    } else {
+                        this.utils.showToast("Already in playlist");
+                    }
+                    return;
+                }
+                
+                // Case 3: More than 1 playlist -> Prompt user to select
+                const msg = "Select Playlist (Enter Number):\n" + plNames.map((n, i) => `${i+1}. ${n}`).join('\n');
                 const choice = prompt(msg);
-                if(choice) {
+                if(choice && !isNaN(choice)) {
                     const idx = parseInt(choice) - 1;
                     if(plNames[idx]) {
                         const pName = plNames[idx];
@@ -1127,12 +1127,11 @@
                     btn.appendChild(ripple);
                     setTimeout(() => ripple.remove(), 600);
                 },
-                async downloadTrack(e, url, title) {
-                    e.stopPropagation();
-                    const btn = e.currentTarget;
-                    btn.classList.add('downloading');
-                    btn.innerHTML = '<i class="fa-solid fa-spinner"></i>';
-                    
+                async processDownload(url, title, btn) {
+                    if(btn) {
+                        btn.classList.add('downloading');
+                        btn.innerHTML = '<i class="fa-solid fa-spinner"></i>';
+                    }
                     try {
                         const res = await fetch(url);
                         const blob = await res.blob();
@@ -1148,11 +1147,33 @@
                     } catch (err) {
                         app.utils.showToast("Download failed");
                     } finally {
-                        btn.classList.remove('downloading');
-                        btn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                        if(btn) {
+                            btn.classList.remove('downloading');
+                            btn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                        }
+                    }
+                },
+                downloadTrack(e, url, title) {
+                    e.stopPropagation();
+                    this.processDownload(url, title, e.currentTarget);
+                },
+                downloadCurrent() {
+                    app.dom.fsMenu.classList.remove('active');
+                    const track = app.state.allContextTracks[app.state.currentIndex];
+                    if(track) {
+                        app.utils.showToast("Starting Download...");
+                        this.processDownload(track.preview, track.title, null);
+                    }
+                },
+                addCurrentToPlaylist() {
+                    app.dom.fsMenu.classList.remove('active');
+                    const track = app.state.allContextTracks[app.state.currentIndex];
+                    if(track) {
+                        app.addToPlaylistPrompt(null, encodeURIComponent(JSON.stringify(track)));
                     }
                 },
                 shareCurrent() {
+                    app.dom.fsMenu.classList.remove('active');
                     const track = app.state.allContextTracks[app.state.currentIndex];
                     if(!track) return;
                     if (navigator.share) {

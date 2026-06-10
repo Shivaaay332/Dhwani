@@ -6,7 +6,7 @@ import { Search, Heart, Music, Disc, Play, Pause, Plus, ListMusic, Trash2, Mic, 
 import Player from '@/components/Player';
 
 // Deployment Fix: Dynamic API URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dhwani-api.onrender.com';
 const CATEGORIES = ["Trending", "Arijit Singh", "90s Hindi", "LoFi", "Punjabi", "Romantic"];
 
 export default function Home() {
@@ -100,7 +100,9 @@ export default function Home() {
     };
 
     const startVoiceSearch = () => {
-        const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+        // VERCEL TYPE ERROR FIX: window ko "any" assign kiya taaki TypeScript block na kare
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
         if (!SpeechRecognition) return showToast("Voice Search not supported here.");
         const recognition = new SpeechRecognition();
         recognition.onstart = () => setIsListening(true);
@@ -196,14 +198,12 @@ export default function Home() {
         <main className="relative min-h-screen bg-[#050505] text-white flex overflow-hidden">
             <div className="ambient-bg" />
 
-            {/* Custom Toast Notification */}
             {toast && (
                 <div className="fixed bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-2xl z-[100] animate-bounce text-sm whitespace-nowrap">
                     {toast}
                 </div>
             )}
 
-            {/* DESKTOP SIDEBAR */}
             <aside className="hidden md:flex flex-col w-64 bg-black/80 backdrop-blur-2xl border-r border-white/5 h-screen z-30">
                 <div className="p-6 flex items-center gap-3 text-2xl font-black">
                     <img src="/logo.png" className="w-8 h-8 rounded-md" alt="logo" onError={(e) => e.currentTarget.style.display='none'} />
@@ -224,7 +224,6 @@ export default function Home() {
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
             <div className="flex-1 pb-24 md:pb-32 h-screen overflow-y-auto scrollbar-hide relative z-10 w-full">
                 <div className="p-4 md:p-8 max-w-7xl mx-auto">
                     
@@ -236,7 +235,6 @@ export default function Home() {
                         <button onClick={() => setActiveTab('profile')} className="w-8 h-8 bg-gradient-to-r from-fuchsia-500 to-purple-600 rounded-full flex items-center justify-center text-black font-black text-sm">{user.name.charAt(0)}</button>
                     </div>
 
-                    {/* === HOME TAB === */}
                     {activeTab === 'home' && (
                         <div className="space-y-6">
                             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 mask-edges">
@@ -283,7 +281,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* === SEARCH TAB === */}
                     {activeTab === 'search' && (
                         <div>
                             <form onSubmit={handleSearchSubmit} className="relative mb-8 flex gap-2">
@@ -305,7 +302,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* === PLAYLISTS TAB === */}
                     {activeTab === 'playlists' && (
                         <div>
                             {!selectedPlaylistSongs ? (
@@ -339,7 +335,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* === LIKED SONGS TAB === */}
                     {activeTab === 'liked' && (
                         <div>
                             <h2 className="text-xl md:text-2xl font-black mb-6">Liked Songs</h2>
@@ -349,7 +344,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* === PROFILE TAB === */}
                     {activeTab === 'profile' && (
                         <div className="max-w-md mx-auto text-center mt-10">
                             <div className="w-24 h-24 bg-gradient-to-tr from-fuchsia-500 to-purple-600 rounded-full mx-auto flex items-center justify-center text-4xl font-black shadow-lg mb-4">{user.name.charAt(0)}</div>
@@ -362,7 +356,6 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* === SETTINGS TAB === */}
                     {activeTab === 'settings' && (
                         <div className="max-w-xl mx-auto mt-4 md:mt-10">
                             <h2 className="text-2xl font-black mb-6">Settings</h2>
@@ -396,7 +389,6 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* MOBILE BOTTOM NAVIGATION */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-black/95 backdrop-blur-2xl border-t border-white/10 flex justify-around items-center px-2 z-50">
                 <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 w-16 ${activeTab === 'home' ? 'text-fuchsia-500' : 'text-zinc-500'}`}><Music size={22} /><span className="text-[9px] font-bold">Home</span></button>
                 <button onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 w-16 ${activeTab === 'search' ? 'text-fuchsia-500' : 'text-zinc-500'}`}><Search size={22} /><span className="text-[9px] font-bold">Search</span></button>

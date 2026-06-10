@@ -1,0 +1,21 @@
+{
+  "name": "Dhwani Premium",
+  "short_name": "Dhwani",
+  "description": "Full-Stack Music Streaming App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#d946ef",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

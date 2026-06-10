@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
 // Deployment Fix: Dynamic API URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dhwani-api.onrender.com';
 
 export default function Player() {
     const { currentTrack, isPlaying, togglePlay, setPlaying, nextTrack, prevTrack, isFullScreen, toggleFullScreen, isShuffle, toggleShuffle, loopMode, toggleLoop, showToast } = usePlayerStore();
@@ -32,7 +32,9 @@ export default function Player() {
     const trebleFilterRef = useRef<BiquadFilterNode | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-    const animationRef = useRef<number>();
+    
+    // VERCEL TYPE ERROR FIX: null add kar diya
+    const animationRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (currentTrack) {

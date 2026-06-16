@@ -50,66 +50,36 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
-    // Track back button press count for exit confirmation
-    const [backPressCount, setBackPressCount] = useState(0);
-
-    // Handle back button - proper navigation with exit confirmation
+    // Handle back button - simple navigation within app
     useEffect(() => {
-        let lastPressTime = 0;
-        
         const handlePopState = (e: PopStateEvent) => {
-            const now = Date.now();
+            // Prevent default browser back
+            e.preventDefault();
             
-            // Debounce rapid presses (within 2 seconds)
-            if (now - lastPressTime < 1500) {
-                e.preventDefault();
-                return;
-            }
-            lastPressTime = now;
-            
-            // If we're deeper in navigation (opened playlist detail)
+            // If we're in playlist detail - go back to playlists list
             if (selectedPlaylistSongs) {
-                e.preventDefault();
                 setSelectedPlaylistSongs(null);
                 setCurrentPlaylistName('');
-                history.pushState(null, '', '');
             }
-            // If we're in any tab except home
+            // If we're in any tab except home - go to home
             else if (activeTab !== 'home') {
-                e.preventDefault();
                 setActiveTab('home');
-                history.pushState(null, '', '');
             }
-            // If we're at home - first press shows modal, second press exits
+            // If we're at home - show exit modal (don't actually exit)
             else {
-                e.preventDefault();
-                if (backPressCount === 0) {
-                    // First press - show exit warning
-                    setBackPressCount(1);
-                    setShowExitModal(true);
-                    history.pushState(null, '', '');
-                    // Auto-reset after 3 seconds
-                    setTimeout(() => setBackPressCount(0), 3000);
-                } else {
-                    // Second press - exit the app
-                    setBackPressCount(0);
-                    setShowExitModal(false);
-                    // Try to close, if not possible, navigate away
-                    try {
-                        window.close();
-                    } catch (e) {
-                        // If window.close() fails, try to navigate to blank
-                        window.location.href = 'about:blank';
-                    }
-                }
+                setShowExitModal(true);
             }
+            
+            // Push state back so we can catch next back press
+            history.pushState(null, '', '');
         };
         
         window.addEventListener('popstate', handlePopState);
+        // Initial state
         history.pushState(null, '', '');
         
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [selectedPlaylistSongs, activeTab, backPressCount]);
+    }, [selectedPlaylistSongs, activeTab]);
     
     // Load settings from localStorage
     useEffect(() => {
@@ -339,26 +309,33 @@ export default function Home() {
                                 <X size={32} className="text-orange-500" />
                             </div>
                             <h3 className="text-xl font-black mb-2">Exit App?</h3>
-                            <p className="text-zinc-400 text-sm">Press Exit to leave Dhwani</p>
+                            <p className="text-zinc-400 text-sm">Press Exit button to leave Dhwani</p>
                         </div>
                         <div className="flex gap-3">
                             <button 
-                                onClick={() => setShowExitModal(false)} 
+                                onClick={() => {
+                                    setShowExitModal(false);
+                                    // Clear history so next back goes to browser
+                                    history.pushState(null, '', '');
+                                }} 
                                 className="flex-1 py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition active:scale-95"
                             >
-                                Cancel
+                                Stay
                             </button>
                             <button 
                                 onClick={() => {
+                                    // Clear modal
                                     setShowExitModal(false);
-                                    // Exit the app immediately
+                                    // Navigate to about:blank to "exit" the app
+                                    // This is the most reliable way to close/minimize
+                                    const exitUrl = window.location.href;
+                                    window.location.href = 'about:blank';
+                                    // If that didn't work, show message
                                     setTimeout(() => {
-                                        try {
-                                            window.close();
-                                        } catch (e) {
-                                            window.location.href = 'about:blank';
+                                        if (window.location.href !== 'about:blank') {
+                                            showToast("Tap again to exit");
                                         }
-                                    }, 100);
+                                    }, 500);
                                 }} 
                                 className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition active:scale-95"
                             >

@@ -37,53 +37,35 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
-    // Handle back button/navigation - ONLY for PWA standalone mode
+    // Handle back button - smooth navigation within app
     useEffect(() => {
-        const handlePopState = (e: PopStateEvent) => {
-            // Check if running as PWA (standalone)
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-                || (window.navigator as any).standalone 
-                || document.referrer.includes('android-app://');
-            
-            // Only handle back button in PWA mode
-            if (!isStandalone) return;
-            
-            e.preventDefault();
-            
+        // Track navigation depth
+        const navDepth = { count: 0 };
+        
+        const handlePopState = () => {
+            // If we're deeper in navigation (opened playlist detail)
             if (selectedPlaylistSongs) {
-                // Go back from playlist detail to playlists list
                 setSelectedPlaylistSongs(null);
                 setCurrentPlaylistName('');
+                navDepth.count = 1;
                 history.pushState(null, '', '');
-            } else if (activeTab === 'playlists') {
-                // Go back from playlists to home
+            }
+            // If we're in any tab except home
+            else if (activeTab !== 'home') {
                 setActiveTab('home');
+                navDepth.count = 0;
                 history.pushState(null, '', '');
-            } else if (activeTab === 'liked') {
-                setActiveTab('home');
-                history.pushState(null, '', '');
-            } else if (activeTab === 'search') {
-                setActiveTab('home');
-                history.pushState(null, '', '');
-            } else if (activeTab === 'profile') {
-                if (isEditingProfile) {
-                    setIsEditingProfile(false);
-                } else {
-                    setActiveTab('home');
-                }
-                history.pushState(null, '', '');
-            } else if (activeTab === 'settings') {
-                setActiveTab('home');
-                history.pushState(null, '', '');
+            }
+            // If we're at home and try to go back - let browser handle it (will go to previous webpage)
+            else {
+                // At home, back button will exit to previous page - this is expected browser behavior
             }
         };
         
         window.addEventListener('popstate', handlePopState);
-        // Push initial state
-        history.pushState(null, '', '');
         
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [selectedPlaylistSongs, activeTab, isEditingProfile]);
+    }, [selectedPlaylistSongs, activeTab]);
 
     // Edit profile handlers
     const startEditProfile = () => {

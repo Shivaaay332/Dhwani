@@ -50,36 +50,22 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
-    // Handle back button - simple navigation within app
+    // Handle back button - only for internal navigation (not for exiting)
     useEffect(() => {
-        const handlePopState = (e: PopStateEvent) => {
-            // Prevent default browser back
-            e.preventDefault();
-            
-            // If we're in playlist detail - go back to playlists list
+        const handlePopState = () => {
+            // Only handle back if we're in playlist detail
             if (selectedPlaylistSongs) {
                 setSelectedPlaylistSongs(null);
                 setCurrentPlaylistName('');
+                history.pushState(null, '', '');
             }
-            // If we're in any tab except home - go to home
-            else if (activeTab !== 'home') {
-                setActiveTab('home');
-            }
-            // If we're at home - show exit modal (don't actually exit)
-            else {
-                setShowExitModal(true);
-            }
-            
-            // Push state back so we can catch next back press
-            history.pushState(null, '', '');
         };
         
         window.addEventListener('popstate', handlePopState);
-        // Initial state
         history.pushState(null, '', '');
         
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [selectedPlaylistSongs, activeTab]);
+    }, [selectedPlaylistSongs]);
     
     // Load settings from localStorage
     useEffect(() => {

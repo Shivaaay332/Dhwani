@@ -279,6 +279,18 @@ export default function Home() {
                 </div>
             )}
 
+            <aside className="hidden md:flex flex-col w-64 bg-black/80 backdrop-blur-2xl border-r border-white/5 h-screen z-30">
+                <div className="p-6 flex items-center gap-3 text-2xl font-black">
+                    <img src="/logo.png" className="w-8 h-8 rounded-md" alt="logo" onError={(e) => e.currentTarget.style.display='none'} />
+                    <span className="bg-gradient-to-r from-fuchsia-500 to-purple-500 bg-clip-text text-transparent italic">Dhwani</span>
+                </div>
+                <nav className="flex-1 px-4 space-y-2 mt-4">
+                    <button onClick={() => setActiveTab('home')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'home' ? 'bg-fuchsia-500 text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}><Music size={20} /> Home</button>
+                    <button onClick={() => setActiveTab('search')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'search' ? 'bg-fuchsia-500 text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}><Search size={20} /> Search</button>
+                    <button onClick={() => setActiveTab('playlists')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'playlists' ? 'bg-fuchsia-500 text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}><ListMusic size={20} /> Playlists</button>
+                    <button onClick={() => setActiveTab('liked')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'liked' ? 'bg-fuchsia-500 text-black shadow-lg' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}><Heart size={20} /> Liked Songs</button>
+                </nav>
+                <div className="p-4 mt-auto border-t border-white/5 space-y-2">
                     <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl transition ${activeTab === 'profile' ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
                         <div className="w-8 h-8 bg-fuchsia-500 text-black rounded-full flex items-center justify-center font-black">{user.name.charAt(0)}</div>
                         <span className="font-bold text-sm truncate">{user.name}</span>

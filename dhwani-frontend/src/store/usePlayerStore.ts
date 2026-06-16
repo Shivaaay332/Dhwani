@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface Song {
     id: string;
@@ -43,48 +44,57 @@ interface PlayerStore {
     prevTrack: () => void;
 }
 
-export const usePlayerStore = create<PlayerStore>((set) => ({
-    user: null,
-    login: (userData) => set({ user: userData }),
-    logout: () => set({ user: null, currentTrack: null, isPlaying: false }),
+export const usePlayerStore = create<PlayerStore>()(
+    persist(
+        (set) => ({
+            user: null,
+            login: (userData) => set({ user: userData }),
+            logout: () => set({ user: null, currentTrack: null, isPlaying: false }),
 
-    toast: null,
-    showToast: (msg) => {
-        set({ toast: msg });
-        setTimeout(() => set({ toast: null }), 3000);
-    },
+            toast: null,
+            showToast: (msg) => {
+                set({ toast: msg });
+                setTimeout(() => set({ toast: null }), 3000);
+            },
 
-    deferredPrompt: null,
-    setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
+            deferredPrompt: null,
+            setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
 
-    currentTrack: null,
-    queue: [],
-    isPlaying: false,
-    isFullScreen: false,
-    isShuffle: false,
-    loopMode: 0,
+            currentTrack: null,
+            queue: [],
+            isPlaying: false,
+            isFullScreen: false,
+            isShuffle: false,
+            loopMode: 0,
 
-    playTrack: (track, queue) => set({ 
-        currentTrack: { ...track, id: track.id || track.songId || '' }, 
-        queue, 
-        isPlaying: true 
-    }),
-    togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-    setPlaying: (playing) => set({ isPlaying: playing }),
-    toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
-    toggleShuffle: () => set((state) => ({ isShuffle: !state.isShuffle })),
-    toggleLoop: () => set((state) => ({ loopMode: (state.loopMode + 1) % 3 })),
+            playTrack: (track, queue) => set({ 
+                currentTrack: { ...track, id: track.id || track.songId || '' }, 
+                queue, 
+                isPlaying: true 
+            }),
+            togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
+            setPlaying: (playing) => set({ isPlaying: playing }),
+            toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
+            toggleShuffle: () => set((state) => ({ isShuffle: !state.isShuffle })),
+            toggleLoop: () => set((state) => ({ loopMode: (state.loopMode + 1) % 3 })),
 
-    nextTrack: () => set((state) => {
-        if (!state.currentTrack || state.queue.length === 0) return state;
-        if (state.loopMode === 2) return { isPlaying: true }; 
-        let nextIndex = state.isShuffle ? Math.floor(Math.random() * state.queue.length) : (state.queue.findIndex(t => (t.id === state.currentTrack?.id || t.songId === state.currentTrack?.id)) + 1) % state.queue.length;
-        return { currentTrack: state.queue[nextIndex], isPlaying: true };
-    }),
+            nextTrack: () => set((state) => {
+                if (!state.currentTrack || state.queue.length === 0) return state;
+                if (state.loopMode === 2) return { isPlaying: true }; 
+                let nextIndex = state.isShuffle ? Math.floor(Math.random() * state.queue.length) : (state.queue.findIndex(t => (t.id === state.currentTrack?.id || t.songId === state.currentTrack?.id)) + 1) % state.queue.length;
+                return { currentTrack: state.queue[nextIndex], isPlaying: true };
+            }),
 
-    prevTrack: () => set((state) => {
-        if (!state.currentTrack || state.queue.length === 0) return state;
-        let prevIndex = (state.queue.findIndex(t => (t.id === state.currentTrack?.id || t.songId === state.currentTrack?.id)) - 1 + state.queue.length) % state.queue.length;
-        return { currentTrack: state.queue[prevIndex], isPlaying: true };
-    }),
-}));
+            prevTrack: () => set((state) => {
+                if (!state.currentTrack || state.queue.length === 0) return state;
+                let prevIndex = (state.queue.findIndex(t => (t.id === state.currentTrack?.id || t.songId === state.currentTrack?.id)) - 1 + state.queue.length) % state.queue.length;
+                return { currentTrack: state.queue[prevIndex], isPlaying: true };
+            }),
+        }),
+        {
+            name: 'dhwani-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({ user: state.user }), // Only persist user, not queue/playing state
+        }
+    )
+);

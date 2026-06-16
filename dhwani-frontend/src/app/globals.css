@@ -8,10 +8,33 @@
 }
 
 @layer base {
+  html {
+    /* Mobile viewport fix - prevent zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  
   body {
     background-color: var(--bg);
     color: white;
     overflow-x: hidden;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior: none;
+    /* Prevent text selection on interactive elements */
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile touch optimizations */
+  button, a, [role="button"] {
+    /* Ensure minimum touch target size */
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Prevent iOS font size adjustment */
+  input, textarea, select {
+    font-size: 16px !important;
   }
 }
 

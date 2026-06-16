@@ -50,24 +50,58 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
+    // Track back button press count for exit confirmation
+    const [backPressCount, setBackPressCount] = useState(0);
+
     // Handle back button - proper navigation with exit confirmation
     useEffect(() => {
-        const handlePopState = () => {
+        let lastPressTime = 0;
+        
+        const handlePopState = (e: PopStateEvent) => {
+            const now = Date.now();
+            
+            // Debounce rapid presses (within 2 seconds)
+            if (now - lastPressTime < 1500) {
+                e.preventDefault();
+                return;
+            }
+            lastPressTime = now;
+            
             // If we're deeper in navigation (opened playlist detail)
             if (selectedPlaylistSongs) {
+                e.preventDefault();
                 setSelectedPlaylistSongs(null);
                 setCurrentPlaylistName('');
                 history.pushState(null, '', '');
             }
             // If we're in any tab except home
             else if (activeTab !== 'home') {
+                e.preventDefault();
                 setActiveTab('home');
                 history.pushState(null, '', '');
             }
-            // If we're at home and try to go back - show exit modal
+            // If we're at home - first press shows modal, second press exits
             else {
-                setShowExitModal(true);
-                history.pushState(null, '', '');
+                e.preventDefault();
+                if (backPressCount === 0) {
+                    // First press - show exit warning
+                    setBackPressCount(1);
+                    setShowExitModal(true);
+                    history.pushState(null, '', '');
+                    // Auto-reset after 3 seconds
+                    setTimeout(() => setBackPressCount(0), 3000);
+                } else {
+                    // Second press - exit the app
+                    setBackPressCount(0);
+                    setShowExitModal(false);
+                    // Try to close, if not possible, navigate away
+                    try {
+                        window.close();
+                    } catch (e) {
+                        // If window.close() fails, try to navigate to blank
+                        window.location.href = 'about:blank';
+                    }
+                }
             }
         };
         
@@ -75,7 +109,7 @@ export default function Home() {
         history.pushState(null, '', '');
         
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [selectedPlaylistSongs, activeTab]);
+    }, [selectedPlaylistSongs, activeTab, backPressCount]);
     
     // Load settings from localStorage
     useEffect(() => {
@@ -290,7 +324,7 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Exit Confirmation Modal - Shows when back button pressed on home */}
+            {/* Exit Modal - Shows when back pressed on home */}
             {showExitModal && user && (
                 <div 
                     className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
@@ -301,28 +335,34 @@ export default function Home() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-fuchsia-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <X size={32} className="text-fuchsia-500" />
+                            <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <X size={32} className="text-orange-500" />
                             </div>
-                            <h3 className="text-xl font-black mb-2">Leave App?</h3>
-                            <p className="text-zinc-400 text-sm">You're about to leave Dhwani</p>
+                            <h3 className="text-xl font-black mb-2">Exit App?</h3>
+                            <p className="text-zinc-400 text-sm">Press Exit to leave Dhwani</p>
                         </div>
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => setShowExitModal(false)} 
                                 className="flex-1 py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition active:scale-95"
                             >
-                                Stay
+                                Cancel
                             </button>
                             <button 
                                 onClick={() => {
                                     setShowExitModal(false);
-                                    // Close the window/tab
-                                    window.close();
+                                    // Exit the app immediately
+                                    setTimeout(() => {
+                                        try {
+                                            window.close();
+                                        } catch (e) {
+                                            window.location.href = 'about:blank';
+                                        }
+                                    }, 100);
                                 }} 
                                 className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition active:scale-95"
                             >
-                                Leave
+                                Exit
                             </button>
                         </div>
                     </div>

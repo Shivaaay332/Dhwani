@@ -104,8 +104,10 @@ export default function Home() {
     };
 
     const handleLogout = () => {
-        // Show exit modal instead of logging out
-        setShowExitModal(true);
+        if (confirm("Sign out of Dhwani?")) {
+            logout();
+            showToast("Signed out");
+        }
     };
 
     const installPWA = async () => {

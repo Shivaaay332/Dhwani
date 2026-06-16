@@ -18,7 +18,6 @@ export default function Home() {
     const [editEmail, setEditEmail] = useState('');
     const [editBio, setEditBio] = useState('');
     const [editFavoriteSinger, setEditFavoriteSinger] = useState('');
-    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
     const [query, setQuery] = useState('');
     const [isListening, setIsListening] = useState(false);
@@ -38,20 +37,53 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
-    // Handle back button/navigation
+    // Handle back button/navigation - ONLY for PWA standalone mode
     useEffect(() => {
-        const handlePopState = () => {
+        const handlePopState = (e: PopStateEvent) => {
+            // Check if running as PWA (standalone)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+                || (window.navigator as any).standalone 
+                || document.referrer.includes('android-app://');
+            
+            // Only handle back button in PWA mode
+            if (!isStandalone) return;
+            
+            e.preventDefault();
+            
             if (selectedPlaylistSongs) {
+                // Go back from playlist detail to playlists list
                 setSelectedPlaylistSongs(null);
+                setCurrentPlaylistName('');
                 history.pushState(null, '', '');
-            } else if (activeTab !== 'home') {
-                setShowExitConfirm(true);
+            } else if (activeTab === 'playlists') {
+                // Go back from playlists to home
+                setActiveTab('home');
+                history.pushState(null, '', '');
+            } else if (activeTab === 'liked') {
+                setActiveTab('home');
+                history.pushState(null, '', '');
+            } else if (activeTab === 'search') {
+                setActiveTab('home');
+                history.pushState(null, '', '');
+            } else if (activeTab === 'profile') {
+                if (isEditingProfile) {
+                    setIsEditingProfile(false);
+                } else {
+                    setActiveTab('home');
+                }
+                history.pushState(null, '', '');
+            } else if (activeTab === 'settings') {
+                setActiveTab('home');
                 history.pushState(null, '', '');
             }
         };
+        
         window.addEventListener('popstate', handlePopState);
+        // Push initial state
+        history.pushState(null, '', '');
+        
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [selectedPlaylistSongs, activeTab]);
+    }, [selectedPlaylistSongs, activeTab, isEditingProfile]);
 
     // Edit profile handlers
     const startEditProfile = () => {
@@ -250,24 +282,6 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Exit Confirmation Modal */}
-            {showExitConfirm && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-                        <h3 className="text-xl font-black mb-2">Exit App?</h3>
-                        <p className="text-zinc-400 mb-6">Are you sure you want to leave Dhwani?</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => { setShowExitConfirm(false); setActiveTab('home'); }} className="flex-1 py-3 bg-fuchsia-500 text-black font-bold rounded-xl hover:scale-[1.02] transition active:scale-95">
-                                Stay
-                            </button>
-                            <button onClick={() => { setShowExitConfirm(false); logout(); }} className="flex-1 py-3 border border-red-500/50 text-red-500 font-bold rounded-xl hover:bg-red-500 hover:text-white transition active:scale-95">
-                                Exit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <aside className="hidden md:flex flex-col w-64 bg-black/80 backdrop-blur-2xl border-r border-white/5 h-screen z-30">
                 <div className="p-6 flex items-center gap-3 text-2xl font-black">
                     <img src="/logo.png" className="w-8 h-8 rounded-md" alt="logo" onError={(e) => e.currentTarget.style.display='none'} />
@@ -301,9 +315,16 @@ export default function Home() {
 
                     {activeTab === 'home' && (
                         <div className="space-y-6">
-                            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 mask-edges">
+                            {/* Categories - horizontal scroll on mobile */}
+                            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 mask-edges flex-nowrap">
                                 {CATEGORIES.map(cat => (
-                                    <button key={cat} onClick={() => handleCategoryClick(cat)} className={`whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-bold transition-all border ${activeCategory === cat ? 'bg-fuchsia-500 text-black border-fuchsia-500' : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'}`}>{cat}</button>
+                                    <button 
+                                        key={cat} 
+                                        onClick={() => handleCategoryClick(cat)} 
+                                        className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all border ${activeCategory === cat ? 'bg-fuchsia-500 text-black border-fuchsia-500' : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'}`}
+                                    >
+                                        {cat}
+                                    </button>
                                 ))}
                             </div>
                             
@@ -376,13 +397,26 @@ export default function Home() {
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                                         {playlists.map(pl => (
-                                            <div key={pl.id} onClick={() => { setSelectedPlaylistSongs(pl.songs); setCurrentPlaylistName(pl.name); }} className="relative bg-white/5 p-4 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 group transition">
-                                                <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete this playlist?')) { axios.delete(`${API_URL}/api/playlists/${pl.id}`).then(() => { loadBackendData(); showToast("Playlist Deleted"); }); } }} className="absolute top-3 right-3 text-zinc-500 hover:text-red-500 bg-black/60 p-1.5 rounded-full transition opacity-0 group-hover:opacity-100 md:opacity-100 z-10">
-                                                    <Trash2 size={14}/>
+                                            <div key={pl.id} className="relative bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition overflow-hidden">
+                                                {/* Delete button - bottom right, always visible on mobile */}
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); if(confirm('Delete this playlist?')) { axios.delete(`${API_URL}/api/playlists/${pl.id}`).then(() => { loadBackendData(); showToast("Playlist Deleted"); }); } }} 
+                                                    className="absolute bottom-3 right-3 z-10 p-2 bg-black/60 hover:bg-red-500 rounded-full transition"
+                                                >
+                                                    <Trash2 size={14} className="text-white"/>
                                                 </button>
-                                                <div className="aspect-square bg-fuchsia-500/10 rounded-xl flex items-center justify-center text-fuchsia-500 mb-3 group-hover:bg-fuchsia-500 group-hover:text-black transition"><ListMusic size={32} /></div>
-                                                <h3 className="font-bold text-sm truncate text-white pr-6">{pl.name}</h3>
-                                                <p className="text-xs text-zinc-500">{pl.songs?.length || 0} tracks</p>
+                                                
+                                                {/* Clickable area for opening playlist */}
+                                                <div 
+                                                    onClick={() => { setSelectedPlaylistSongs(pl.songs || []); setCurrentPlaylistName(pl.name); }} 
+                                                    className="p-4 cursor-pointer"
+                                                >
+                                                    <div className="aspect-square bg-fuchsia-500/10 rounded-xl flex items-center justify-center text-fuchsia-500 mb-3 group-hover:bg-fuchsia-500 group-hover:text-black transition">
+                                                        <ListMusic size={32} />
+                                                    </div>
+                                                    <h3 className="font-bold text-sm truncate text-white">{pl.name}</h3>
+                                                    <p className="text-xs text-zinc-500">{pl.songs?.length || 0} tracks</p>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

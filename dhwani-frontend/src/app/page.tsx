@@ -2,12 +2,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { usePlayerStore } from '@/store/usePlayerStore';
-import { Search, Heart, Music, Disc, Play, Pause, Plus, ListMusic, Trash2, Mic, User, Settings as SettingsIcon, LogOut, Download, Smartphone, Star, Edit3, Save, X, ChevronLeft } from 'lucide-react';
+import { Search, Heart, Music, Disc, Play, Pause, Plus, ListMusic, Trash2, Mic, User, Settings as SettingsIcon, LogOut, Download, Smartphone, Star, Edit3, Save, X, ChevronLeft, Wifi, Zap } from 'lucide-react';
 import Player from '@/components/Player';
 
 // Deployment Fix: Dynamic API URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dhwani-api.onrender.com';
 const CATEGORIES = ["Trending", "Arijit Singh", "90s Hindi", "LoFi", "Punjabi", "Romantic"];
+
+// Settings types
+interface AppSettings {
+    audioQuality: 'low' | 'medium' | 'high';
+    dataSaver: boolean;
+}
 
 export default function Home() {
     const { user, login, logout, playTrack, currentTrack, isPlaying, deferredPrompt, setDeferredPrompt, toast, showToast, updateUser } = usePlayerStore();
@@ -18,7 +24,14 @@ export default function Home() {
     const [editEmail, setEditEmail] = useState('');
     const [editBio, setEditBio] = useState('');
     const [editFavoriteSinger, setEditFavoriteSinger] = useState('');
+    const [showExitModal, setShowExitModal] = useState(false);
     const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+    
+    // Settings state
+    const [settings, setSettings] = useState<AppSettings>({
+        audioQuality: 'high',
+        dataSaver: false
+    });
     const [query, setQuery] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [heroTracks, setHeroTracks] = useState<any[]>([]);
@@ -37,35 +50,50 @@ export default function Home() {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
 
-    // Handle back button - smooth navigation within app
+    // Handle back button - proper navigation with exit confirmation
     useEffect(() => {
-        // Track navigation depth
-        const navDepth = { count: 0 };
-        
         const handlePopState = () => {
             // If we're deeper in navigation (opened playlist detail)
             if (selectedPlaylistSongs) {
                 setSelectedPlaylistSongs(null);
                 setCurrentPlaylistName('');
-                navDepth.count = 1;
                 history.pushState(null, '', '');
             }
             // If we're in any tab except home
             else if (activeTab !== 'home') {
                 setActiveTab('home');
-                navDepth.count = 0;
                 history.pushState(null, '', '');
             }
-            // If we're at home and try to go back - let browser handle it (will go to previous webpage)
+            // If we're at home and try to go back - show exit modal
             else {
-                // At home, back button will exit to previous page - this is expected browser behavior
+                setShowExitModal(true);
+                history.pushState(null, '', '');
             }
         };
         
         window.addEventListener('popstate', handlePopState);
+        history.pushState(null, '', '');
         
         return () => window.removeEventListener('popstate', handlePopState);
     }, [selectedPlaylistSongs, activeTab]);
+    
+    // Load settings from localStorage
+    useEffect(() => {
+        const savedSettings = localStorage.getItem('dhwani-settings');
+        if (savedSettings) {
+            try {
+                setSettings(JSON.parse(savedSettings));
+            } catch (e) {}
+        }
+    }, []);
+    
+    // Save settings to localStorage when changed
+    const updateSettings = (newSettings: Partial<AppSettings>) => {
+        const updated = { ...settings, ...newSettings };
+        setSettings(updated);
+        localStorage.setItem('dhwani-settings', JSON.stringify(updated));
+        showToast("Settings saved!");
+    };
 
     // Edit profile handlers
     const startEditProfile = () => {
@@ -261,6 +289,44 @@ export default function Home() {
             {toast && (
                 <div className="fixed bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-bold shadow-2xl z-[100] animate-bounce text-sm whitespace-nowrap">
                     {toast}
+                </div>
+            )}
+
+            {/* Exit Confirmation Modal */}
+            {showExitModal && user && (
+                <div 
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+                    onClick={() => setShowExitModal(false)}
+                >
+                    <div 
+                        className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-fuchsia-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <X size={32} className="text-fuchsia-500" />
+                            </div>
+                            <h3 className="text-xl font-black mb-2">Exit Dhwani?</h3>
+                            <p className="text-zinc-400 text-sm">Are you sure you want to leave the app?</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setShowExitModal(false)} 
+                                className="flex-1 py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition active:scale-95"
+                            >
+                                Stay
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setShowExitModal(false);
+                                    logout();
+                                }} 
+                                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition active:scale-95"
+                            >
+                                Exit
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -486,29 +552,47 @@ export default function Home() {
                     {activeTab === 'settings' && (
                         <div className="max-w-xl mx-auto mt-4 md:mt-10">
                             <h2 className="text-2xl font-black mb-6">Settings</h2>
-                            
-                            <h3 className="font-bold text-zinc-500 mb-4 uppercase tracking-widest text-xs">App Preferences</h3>
-                            <div className="space-y-3 mb-8">
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
-                                    <div><p className="font-bold text-white">Audio Quality</p><p className="text-xs text-zinc-400">Stream high-quality 320kbps audio</p></div>
-                                    <span className="text-fuchsia-500 text-sm font-bold bg-fuchsia-500/10 px-3 py-1 rounded-md">High</span>
+
+                            <h3 className="font-bold text-zinc-500 mb-4 uppercase tracking-widest text-xs">Audio Quality</h3>
+                            <div className="mb-8">
+                                <div className="flex gap-2 p-1 bg-white/5 rounded-xl">
+                                    <button onClick={() => updateSettings({ audioQuality: 'low' })} className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition flex flex-col items-center gap-1 ${settings.audioQuality === 'low' ? 'bg-fuchsia-500 text-black' : 'text-zinc-400 hover:text-white'}`}>
+                                        <span>Low</span><span className="text-[10px] opacity-70">128 kbps</span>
+                                    </button>
+                                    <button onClick={() => updateSettings({ audioQuality: 'medium' })} className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition flex flex-col items-center gap-1 ${settings.audioQuality === 'medium' ? 'bg-fuchsia-500 text-black' : 'text-zinc-400 hover:text-white'}`}>
+                                        <span>Medium</span><span className="text-[10px] opacity-70">192 kbps</span>
+                                    </button>
+                                    <button onClick={() => updateSettings({ audioQuality: 'high' })} className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm transition flex flex-col items-center gap-1 ${settings.audioQuality === 'high' ? 'bg-fuchsia-500 text-black' : 'text-zinc-400 hover:text-white'}`}>
+                                        <span>High</span><span className="text-[10px] opacity-70">320 kbps</span>
+                                    </button>
                                 </div>
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
-                                    <div><p className="font-bold text-white">Data Saver</p><p className="text-xs text-zinc-400">Reduce data usage on cellular network</p></div>
-                                    <input type="checkbox" className="accent-fuchsia-500 w-4 h-4 cursor-pointer" />
-                                </div>
+                                <p className="text-xs text-zinc-500 mt-2">Current: {settings.audioQuality === 'high' ? 'Best quality' : settings.audioQuality === 'medium' ? 'Balanced' : 'Data saving'}</p>
                             </div>
 
-                            <h3 className="font-bold text-zinc-500 mb-4 uppercase tracking-widest text-xs">PWA & System</h3>
+                            <h3 className="font-bold text-zinc-500 mb-4 uppercase tracking-widest text-xs">Data Saver</h3>
+                            <div className="mb-8">
+                                <button onClick={() => updateSettings({ dataSaver: !settings.dataSaver })} className={`w-full p-4 rounded-xl border transition flex justify-between items-center ${settings.dataSaver ? 'bg-fuchsia-500/10 border-fuchsia-500/50' : 'bg-white/5 border-white/5 hover:border-white/10'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <Wifi size={20} className={settings.dataSaver ? 'text-fuchsia-500' : 'text-zinc-400'} />
+                                        <div className="text-left"><p className="font-bold text-white">Data Saver Mode</p><p className="text-xs text-zinc-400">Reduce mobile data usage</p></div>
+                                    </div>
+                                    <div className={`w-12 h-7 rounded-full transition relative ${settings.dataSaver ? 'bg-fuchsia-500' : 'bg-white/20'}`}>
+                                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition ${settings.dataSaver ? 'right-1' : 'left-1'}`} />
+                                    </div>
+                                </button>
+                                <p className="text-xs text-zinc-500 mt-2">{settings.dataSaver ? '✓ Data saver ON' : '✗ Data saver OFF'}</p>
+                            </div>
+
+                            <h3 className="font-bold text-zinc-500 mb-4 uppercase tracking-widest text-xs">App</h3>
                             <div className="space-y-3">
                                 {deferredPrompt && (
                                     <button onClick={installPWA} className="w-full p-4 bg-gradient-to-r from-fuchsia-500 to-purple-600 rounded-xl flex items-center gap-4 hover:scale-[1.01] transition shadow-lg text-left active:scale-95">
                                         <Smartphone size={24} className="text-white" />
-                                        <div><p className="font-bold text-white text-lg">Install Dhwani App</p><p className="text-xs text-white/80">Add to home screen for native experience</p></div>
+                                        <div><p className="font-bold text-white text-lg">Install Dhwani App</p><p className="text-xs text-white/80">Add to home screen</p></div>
                                     </button>
                                 )}
                                 <button onClick={handleLogout} className="w-full p-4 border border-red-500/30 text-red-500 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition active:scale-95">
-                                    <LogOut size={18} /> Sign Out securely
+                                    <LogOut size={18} /> Sign Out
                                 </button>
                             </div>
                         </div>

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { usePlayerStore } from '@/store/usePlayerStore';
-import { Search, Heart, Music, Disc, Play, Pause, Plus, ListMusic, Trash2, Mic, User, Settings as SettingsIcon, LogOut, Download, Smartphone } from 'lucide-react';
+import { Search, Heart, Music, Disc, Play, Pause, Plus, ListMusic, Trash2, Mic, User, Settings as SettingsIcon, LogOut, Download, Smartphone, Star, Edit3, Save, X, ChevronLeft } from 'lucide-react';
 import Player from '@/components/Player';
 
 // Deployment Fix: Dynamic API URL
@@ -10,13 +10,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dhwani-api.onrender.
 const CATEGORIES = ["Trending", "Arijit Singh", "90s Hindi", "LoFi", "Punjabi", "Romantic"];
 
 export default function Home() {
-    const { user, login, logout, playTrack, currentTrack, isPlaying, deferredPrompt, setDeferredPrompt, toast, showToast } = usePlayerStore();
+    const { user, login, logout, playTrack, currentTrack, isPlaying, deferredPrompt, setDeferredPrompt, toast, showToast, updateUser } = usePlayerStore();
     
     const [activeTab, setActiveTab] = useState<'home' | 'search' | 'playlists' | 'liked' | 'profile' | 'settings'>('home');
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
+    const [editBio, setEditBio] = useState('');
+    const [editFavoriteSinger, setEditFavoriteSinger] = useState('');
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
     const [query, setQuery] = useState('');
     const [isListening, setIsListening] = useState(false);
-    
     const [heroTracks, setHeroTracks] = useState<any[]>([]);
     const [mainTracks, setMainTracks] = useState<any[]>([]);
     const [recTracks, setRecTracks] = useState<any[]>([]);
@@ -32,6 +37,47 @@ export default function Home() {
     useEffect(() => {
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); setDeferredPrompt(e); });
     }, [setDeferredPrompt]);
+
+    // Handle back button/navigation
+    useEffect(() => {
+        const handlePopState = () => {
+            if (selectedPlaylistSongs) {
+                setSelectedPlaylistSongs(null);
+                history.pushState(null, '', '');
+            } else if (activeTab !== 'home') {
+                setShowExitConfirm(true);
+                history.pushState(null, '', '');
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [selectedPlaylistSongs, activeTab]);
+
+    // Edit profile handlers
+    const startEditProfile = () => {
+        setEditName(user?.name || '');
+        setEditEmail(user?.email || '');
+        setEditBio(user?.bio || '');
+        setEditFavoriteSinger(user?.favoriteSinger || '');
+        setIsEditingProfile(true);
+    };
+
+    const saveProfile = () => {
+        if (!editName.trim() || !editEmail.trim()) {
+            showToast("Name and Email required!");
+            return;
+        }
+        updateUser({ name: editName.trim(), email: editEmail.trim(), bio: editBio.trim(), favoriteSinger: editFavoriteSinger.trim() });
+        setIsEditingProfile(false);
+        showToast("Profile updated!");
+    };
+
+    const handleLogout = () => {
+        if (confirm("Are you sure you want to logout?")) {
+            logout();
+            showToast("Logged out successfully");
+        }
+    };
 
     const installPWA = async () => {
         if (deferredPrompt) {
@@ -204,6 +250,24 @@ export default function Home() {
                 </div>
             )}
 
+            {/* Exit Confirmation Modal */}
+            {showExitConfirm && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                        <h3 className="text-xl font-black mb-2">Exit App?</h3>
+                        <p className="text-zinc-400 mb-6">Are you sure you want to leave Dhwani?</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => { setShowExitConfirm(false); setActiveTab('home'); }} className="flex-1 py-3 bg-fuchsia-500 text-black font-bold rounded-xl hover:scale-[1.02] transition active:scale-95">
+                                Stay
+                            </button>
+                            <button onClick={() => { setShowExitConfirm(false); logout(); }} className="flex-1 py-3 border border-red-500/50 text-red-500 font-bold rounded-xl hover:bg-red-500 hover:text-white transition active:scale-95">
+                                Exit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <aside className="hidden md:flex flex-col w-64 bg-black/80 backdrop-blur-2xl border-r border-white/5 h-screen z-30">
                 <div className="p-6 flex items-center gap-3 text-2xl font-black">
                     <img src="/logo.png" className="w-8 h-8 rounded-md" alt="logo" onError={(e) => e.currentTarget.style.display='none'} />
@@ -312,11 +376,13 @@ export default function Home() {
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                                         {playlists.map(pl => (
-                                            <div key={pl.id} onClick={() => { setSelectedPlaylistSongs(pl.songs); setCurrentPlaylistName(pl.name); }} className="bg-white/5 p-4 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 group transition">
+                                            <div key={pl.id} onClick={() => { setSelectedPlaylistSongs(pl.songs); setCurrentPlaylistName(pl.name); }} className="relative bg-white/5 p-4 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 group transition">
+                                                <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete this playlist?')) { axios.delete(`${API_URL}/api/playlists/${pl.id}`).then(() => { loadBackendData(); showToast("Playlist Deleted"); }); } }} className="absolute top-3 right-3 text-zinc-500 hover:text-red-500 bg-black/60 p-1.5 rounded-full transition opacity-0 group-hover:opacity-100 md:opacity-100 z-10">
+                                                    <Trash2 size={14}/>
+                                                </button>
                                                 <div className="aspect-square bg-fuchsia-500/10 rounded-xl flex items-center justify-center text-fuchsia-500 mb-3 group-hover:bg-fuchsia-500 group-hover:text-black transition"><ListMusic size={32} /></div>
-                                                <h3 className="font-bold text-sm truncate text-white">{pl.name}</h3>
+                                                <h3 className="font-bold text-sm truncate text-white pr-6">{pl.name}</h3>
                                                 <p className="text-xs text-zinc-500">{pl.songs?.length || 0} tracks</p>
-                                                <button onClick={(e) => { e.stopPropagation(); axios.delete(`${API_URL}/api/playlists/${pl.id}`).then(() => { loadBackendData(); showToast("Playlist Deleted"); }); }} className="absolute top-6 right-6 text-zinc-500 hover:text-red-500 opacity-0 md:group-hover:opacity-100 max-md:opacity-100 bg-black/60 p-2 rounded-full transition"><Trash2 size={16}/></button>
                                             </div>
                                         ))}
                                     </div>
@@ -344,14 +410,59 @@ export default function Home() {
                         </div>
                     )}
 
-                    {activeTab === 'profile' && (
-                        <div className="max-w-md mx-auto text-center mt-10">
-                            <div className="w-24 h-24 bg-gradient-to-tr from-fuchsia-500 to-purple-600 rounded-full mx-auto flex items-center justify-center text-4xl font-black shadow-lg mb-4">{user.name.charAt(0)}</div>
-                            <h2 className="text-2xl font-black">{user.name}</h2>
-                            <p className="text-zinc-400 mb-8">{user.email}</p>
-                            <div className="space-y-3">
-                                <button className="w-full py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition active:scale-95 text-white">Edit Profile</button>
-                                <button onClick={() => { logout(); showToast("Logged out successfully"); }} className="w-full py-3 border border-red-500/50 text-red-500 rounded-xl font-bold hover:bg-red-500 hover:text-black transition active:scale-95">Log Out</button>
+                    {activeTab === 'profile' && !isEditingProfile && (
+                        <div className="max-w-md mx-auto text-center mt-6 md:mt-10">
+                            <button onClick={startEditProfile} className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20 transition md:hidden z-10">
+                                <Edit3 size={18} className="text-white" />
+                            </button>
+                            <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-fuchsia-500 to-purple-600 rounded-full mx-auto flex items-center justify-center text-3xl md:text-4xl font-black shadow-lg mb-4">{user?.name?.charAt(0) || 'U'}</div>
+                            <h2 className="text-xl md:text-2xl font-black">{user?.name}</h2>
+                            <p className="text-zinc-400 text-sm mb-2">{user?.email}</p>
+                            {user?.bio && <p className="text-zinc-500 text-sm mb-4 italic">"{user.bio}"</p>}
+                            {user?.favoriteSinger && (
+                                <div className="flex items-center justify-center gap-2 text-fuchsia-400 text-sm mb-6">
+                                    <Star size={14} fill="currentColor" />
+                                    <span>Fav: {user.favoriteSinger}</span>
+                                </div>
+                            )}
+                            <button onClick={startEditProfile} className="w-full py-3 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition active:scale-95 text-white hidden md:block">
+                                <Edit3 size={16} className="inline mr-2" /> Edit Profile
+                            </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'profile' && isEditingProfile && (
+                        <div className="max-w-md mx-auto mt-6 md:mt-10 relative">
+                            <div className="flex items-center justify-between mb-6">
+                                <button onClick={() => setIsEditingProfile(false)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition">
+                                    <ChevronLeft size={20} className="text-white" />
+                                </button>
+                                <h2 className="text-xl font-black">Edit Profile</h2>
+                                <div className="w-10"></div>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs text-zinc-400 font-bold uppercase mb-2 block">Name</label>
+                                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-fuchsia-500 text-white" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-400 font-bold uppercase mb-2 block">Email</label>
+                                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-fuchsia-500 text-white" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-400 font-bold uppercase mb-2 block">Bio</label>
+                                    <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} placeholder="Tell us about yourself..." rows={3} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-fuchsia-500 text-white resize-none" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-400 font-bold uppercase mb-2 block">Favorite Singer</label>
+                                    <input type="text" value={editFavoriteSinger} onChange={(e) => setEditFavoriteSinger(e.target.value)} placeholder="e.g., Arijit Singh, Lata Mangeshkar..." className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-fuchsia-500 text-white" />
+                                </div>
+                                <button onClick={saveProfile} className="w-full py-3 bg-gradient-to-r from-fuchsia-500 to-purple-600 rounded-xl font-bold hover:scale-[1.02] transition active:scale-95 text-white">
+                                    <Save size={16} className="inline mr-2" /> Save Changes
+                                </button>
+                                <button onClick={() => setIsEditingProfile(false)} className="w-full py-3 border border-white/20 rounded-xl font-bold hover:bg-white/5 transition active:scale-95 text-zinc-400">
+                                    Cancel
+                                </button>
                             </div>
                         </div>
                     )}
@@ -380,7 +491,7 @@ export default function Home() {
                                         <div><p className="font-bold text-white text-lg">Install Dhwani App</p><p className="text-xs text-white/80">Add to home screen for native experience</p></div>
                                     </button>
                                 )}
-                                <button onClick={() => { logout(); showToast("Logged out securely"); }} className="w-full p-4 border border-red-500/30 text-red-500 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition active:scale-95">
+                                <button onClick={handleLogout} className="w-full p-4 border border-red-500/30 text-red-500 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition active:scale-95">
                                     <LogOut size={18} /> Sign Out securely
                                 </button>
                             </div>

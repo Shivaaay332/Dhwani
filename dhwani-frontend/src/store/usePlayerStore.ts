@@ -13,12 +13,15 @@ export interface Song {
 interface User {
     name: string;
     email: string;
+    bio?: string;
+    favoriteSinger?: string;
 }
 
 interface PlayerStore {
     user: User | null;
     login: (userData: User) => void;
     logout: () => void;
+    updateUser: (userData: Partial<User>) => void;
     
     // Premium Toast System
     toast: string | null;
@@ -50,6 +53,7 @@ export const usePlayerStore = create<PlayerStore>()(
             user: null,
             login: (userData) => set({ user: userData }),
             logout: () => set({ user: null, currentTrack: null, isPlaying: false }),
+            updateUser: (userData) => set((state) => ({ user: state.user ? { ...state.user, ...userData } : null })),
 
             toast: null,
             showToast: (msg) => {

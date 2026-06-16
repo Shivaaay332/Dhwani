@@ -115,10 +115,8 @@ export default function Home() {
     };
 
     const handleLogout = () => {
-        if (confirm("Are you sure you want to logout?")) {
-            logout();
-            showToast("Logged out successfully");
-        }
+        // Show exit modal instead of logging out
+        setShowExitModal(true);
     };
 
     const installPWA = async () => {
@@ -292,7 +290,7 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Exit Confirmation Modal */}
+            {/* Exit Confirmation Modal - Shows when back button pressed on home */}
             {showExitModal && user && (
                 <div 
                     className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
@@ -306,8 +304,8 @@ export default function Home() {
                             <div className="w-16 h-16 bg-fuchsia-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <X size={32} className="text-fuchsia-500" />
                             </div>
-                            <h3 className="text-xl font-black mb-2">Exit Dhwani?</h3>
-                            <p className="text-zinc-400 text-sm">Are you sure you want to leave the app?</p>
+                            <h3 className="text-xl font-black mb-2">Leave App?</h3>
+                            <p className="text-zinc-400 text-sm">You're about to leave Dhwani</p>
                         </div>
                         <div className="flex gap-3">
                             <button 
@@ -319,11 +317,12 @@ export default function Home() {
                             <button 
                                 onClick={() => {
                                     setShowExitModal(false);
-                                    logout();
+                                    // Close the window/tab
+                                    window.close();
                                 }} 
                                 className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition active:scale-95"
                             >
-                                Exit
+                                Leave
                             </button>
                         </div>
                     </div>
